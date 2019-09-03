@@ -17,6 +17,7 @@ part 'utils.dart';
 
 typedef HandleDetection<T> = Future<T> Function(FirebaseVisionImage image);
 typedef Widget ErrorWidgetBuilder(BuildContext context, CameraError error);
+typedef ResultsValidator<T> = bool Function(T result);
 
 enum CameraError {
   unknown,
@@ -33,12 +34,14 @@ enum _CameraState {
 
 class CameraMlVision<T> extends StatefulWidget {
   final HandleDetection<T> detector;
-  final Function(T) onResult;
+  final Function(T, VoidCallback) onResult;
   final WidgetBuilder loadingBuilder;
   final ErrorWidgetBuilder errorBuilder;
   final WidgetBuilder overlayBuilder;
   final CameraLensDirection cameraLensDirection;
   final ResolutionPreset resolution;
+  final ResultsValidator<T> resultsValidator;
+  final Duration detectionPeriod;
 
   CameraMlVision({
     Key key,
@@ -49,6 +52,8 @@ class CameraMlVision<T> extends StatefulWidget {
     this.overlayBuilder,
     this.cameraLensDirection = CameraLensDirection.back,
     this.resolution,
+    this.resultsValidator,
+    this.detectionPeriod = const Duration(milliseconds: 100),
   }) : super(key: key);
 
   @override
@@ -65,6 +70,7 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>> {
   bool _alreadyCheckingImage = false;
   bool _isStreaming = false;
   bool _isDeactivate = false;
+  DateTime _prevDetectionDateTime;
 
   @override
   void initState() {
@@ -267,16 +273,35 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>> {
     );
   }
 
+  bool _checkTimeToDetect() {
+    if (_prevDetectionDateTime != null) {
+      var diff = DateTime.now().difference(_prevDetectionDateTime);
+      if (diff < widget.detectionPeriod) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   _processImage(CameraImage cameraImage) async {
-    if (!_alreadyCheckingImage) {
+    if (!_alreadyCheckingImage && _checkTimeToDetect()) {
       _alreadyCheckingImage = true;
+      _prevDetectionDateTime = DateTime.now();
       try {
         final T results = await _detect<T>(cameraImage, _detector, _rotation);
-        widget.onResult(results);
+        if (widget.resultsValidator != null) {
+          if (widget.resultsValidator(results) == false) {
+            _alreadyCheckingImage = false;
+            return;
+          }
+        }
+        widget.onResult(results, () {
+          _alreadyCheckingImage = false;
+        });
       } catch (ex, stack) {
         debugPrint('$ex, $stack');
+        _alreadyCheckingImage = false;
       }
-      _alreadyCheckingImage = false;
     }
   }
 

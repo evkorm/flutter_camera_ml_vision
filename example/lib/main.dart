@@ -96,15 +96,16 @@ class _ScanPageState extends State<ScanPage> {
               );
             },
             detector: FirebaseVision.instance.barcodeDetector().detectInImage,
-            onResult: (List<Barcode> barcodes) {
-              if (!mounted ||
-                  resultSent ||
-                  barcodes == null ||
-                  barcodes.isEmpty) {
-                return;
+            onResult: (List<Barcode> barcodes, VoidCallback continueCallback) {
+              continueCallback();
+              if (mounted &&
+                  !resultSent &&
+                  barcodes != null &&
+                  barcodes.isNotEmpty) {
+                resultSent = true;
+                Navigator.of(context).pop<Barcode>(barcodes.first);
               }
-              resultSent = true;
-              Navigator.of(context).pop<Barcode>(barcodes.first);
+              continueCallback();
             },
           ),
         ),

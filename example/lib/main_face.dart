@@ -55,13 +55,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   reflection: cameraLensDirection == CameraLensDirection.front),
             );
           },
-          onResult: (faces) {
-            if (faces == null || faces.isEmpty || !mounted) {
-              return;
+          onResult: (faces, continueCallback) {
+            if (faces != null && faces.isNotEmpty && mounted) {
+              setState(() {
+                _faces = []..addAll(faces);
+              });
             }
-            setState(() {
-              _faces = []..addAll(faces);
-            });
+            continueCallback();
           },
         ),
       ),

@@ -42,16 +42,16 @@ class _MyHomePageState extends State<MyHomePage> {
           CameraMlVision<List<Barcode>>(
             key: _scanKey,
             detector: FirebaseVision.instance.barcodeDetector().detectInImage,
-            onResult: (barcodes) {
-              if (barcodes == null ||
-                  barcodes.isEmpty ||
-                  data.contains(barcodes.first.displayValue) ||
-                  !mounted) {
-                return;
+            onResult: (barcodes, continueCallback) {
+              if (barcodes != null &&
+                  barcodes.isNotEmpty &&
+                  !data.contains(barcodes.first.displayValue) &&
+                  mounted) {
+                setState(() {
+                  data.add(barcodes.first.displayValue);
+                });
+                continueCallback();
               }
-              setState(() {
-                data.add(barcodes.first.displayValue);
-              });
             },
           ),
           Container(
