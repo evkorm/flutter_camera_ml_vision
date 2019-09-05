@@ -53,7 +53,7 @@ class CameraMlVision<T> extends StatefulWidget {
     this.cameraLensDirection = CameraLensDirection.back,
     this.resolution,
     this.resultsValidator,
-    this.detectionPeriod = const Duration(milliseconds: 100),
+    this.detectionPeriod,
   }) : super(key: key);
 
   @override
@@ -274,7 +274,7 @@ class CameraMlVisionState<T> extends State<CameraMlVision<T>> {
   }
 
   bool _checkTimeToDetect() {
-    if (_prevDetectionDateTime != null) {
+    if (_prevDetectionDateTime != null && widget.detectionPeriod != null) {
       var diff = DateTime.now().difference(_prevDetectionDateTime);
       if (diff < widget.detectionPeriod) {
         return false;
